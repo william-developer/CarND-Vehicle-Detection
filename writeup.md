@@ -48,7 +48,7 @@ cell_per_block = 2
 hog_channel = "ALL" 
 color_space = "YUV"
 ```
-and the accuracy of SVC was 0.9964.
+and the accuracy of SVC was 0.9958.
 Then I tried five color spaces
 ```python
 orient=9
@@ -64,21 +64,21 @@ for color_space in color_spaces:
     SVC_HOG(color_space=color_space, orient=orient, pix_per_cell=pix_per_cell, 
         cell_per_block=cell_per_block, hog_channel=hog_channel,debug=False)
 ```
-The result was that YUV,I got the best Accuracy could improve accuracy.The accuracy was 0.9964.
+The result was that YCrCb,I got the best Accuracy could improve accuracy.The accuracy was 0.9967.
 After that,I tried orient with [8,9,10,11].The best orient was 9 and 11.
-Finally when orient was 11 and color space was YUV,I got the best accuracy which was 0.9964.
+Finally when orient was 11 and color space was YCrCb,I got the best accuracy which was 0.9969.
 
 #### 3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
 
 I trained a linear SVM using HOG features and color features.
-Firstly I extract spatial features, hist features and hog features.Then I conbined them.
-After that I nomalized it.To get better result,I used GridSearchCV to tune LinearSVC parameters.
+Firstly I extracted spatial features, hist features and hog features.Then I combined them.
+After that I nomalized them.To get better result,I used GridSearchCV to tune LinearSVC parameters.
 ```python
 X_train = np.vstack((car_features[car_train_indices],notcar_features[notcar_train_indices])).astype(np.float64)   
 standard_scaler = StandardScaler()
 X_train = standard_scaler.fit_transform(X_train)
 X_test = np.vstack((car_features[car_test_indices],notcar_features[notcar_test_indices])).astype(np.float64) 
-X_test = standard_scaler.transform(X_test) # use same fit as training data
+X_test = standard_scaler.transform(X_test) 
 
 # labels vector
 y_train = np.hstack((np.ones(len(car_train_indices)), np.zeros(len(notcar_train_indices))))
@@ -105,8 +105,8 @@ y_range = {1.0 : (380,508),
            2.5 : (380,700)}
 ```
 Firstly,I calculated the steps to slid window search.Then extracted HOG for this patch and the image patch.
-Then I normallize the combination of spatial features, hist features and hog features.
-After that I got a prediction. 
+Then I normallized the combination of spatial features, hist features and hog features.
+After that I got a prediction and confidence. A higher confidence mean a more confident prediction so by setting a threshold on it.
 Finally,I draw boxes if there was a vehicle.
 ```python
 for xb in range(nxsteps):
@@ -133,8 +133,8 @@ for xb in range(nxsteps):
             test_features = X_scaler.transform(np.hstack((spatial_features, hist_features,
                                                           hog_features)).reshape(1, -1)) 
             test_prediction = clf.predict(test_features)
-            
-            if test_prediction == 1:
+            confidence = clf.decision_function(test_features)
+            if test_prediction == 1 and confidence>0.3:
                 xbox_left = np.int(xleft*scale)
                 ytop_draw = np.int(ytop*scale)
                 win_draw = np.int(window*scale)
@@ -147,7 +147,7 @@ for xb in range(nxsteps):
 
 #### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
-Ultimately I searched on two scales using HSV 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  
+Ultimately I searched on two scales using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  
 I tried some color spaces and histograms parameters and tune the linear sve parameter using GridSearchCV.
 Here are some example images:
 
